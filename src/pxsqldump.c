@@ -90,12 +90,8 @@ int create_sql_CREATE(px_header *header, px_fieldInfo **felder)
 int create_sql_INSERT(px_header *header, px_fieldInfo **felder, px_records block, char *blobname)
 {
 	int i, block_index = 0;
-	char *name = NULL;
-
-	name = quote(header->tableName, name_quoting);
-	printf("INSERT INTO %s VALUES (", name);
-	free(name);
-
+	printf("(");
+	
 #define BLOCK_COPY(x,size) \
 		memcpy(x,   block + block_index, size); \
 		/*printf("\nBl-IDX1: %04x - ",block_index);*/ \
@@ -368,7 +364,7 @@ int create_sql_INSERT(px_header *header, px_fieldInfo **felder, px_records block
 		}
 	}
 #undef BLOCK_COPY
-	printf(");\n");
+	printf(")");
 
 	return 0;
 }
@@ -390,10 +386,20 @@ int create_sql_dump(px_header *header, px_fieldInfo **felder, px_blocks **blocks
 				"Tell me if I'm wrong\n", __FILE__, __LINE__);
 			return -1;
 		}
+
+		if (blocks[n]->numRecsInBlock > 0) {
+			char *name = NULL;
+			name = quote(header->tableName, name_quoting);
+			printf("INSERT INTO %s VALUES ", name);
+			free(name);
+		}
+
 		for (f = 0; f < blocks[n]->numRecsInBlock; f++)
 		{
+			if (f > 0) printf(",");
 			create_sql_INSERT(header, felder, blocks[n]->records[f], blobname);
 		}
+		printf(";");
 		n = blocks[n]->nextBlock - 1;
 		c++;
 	}
